@@ -589,13 +589,19 @@ int main( int argc, char *argv[])
            chdir( getenv( "HOME" ) );
            FILE *fptt; 
            fptt = fopen( ".clipfig", "wb+" );
-            fputs( user_line_linestr , fptt );
+            //fputs( user_line_linestr , fptt );
+            strncpy( string, "" , PATH_MAX );
+            strncpy( string, user_line_linestr , PATH_MAX );
+            printf("got: \"%s\"\n", strdelimit( string, '{', '}', 1 ) );
+            //nrunwith( "  cacaview  ",  strdelimit( string, '{', '}', 1 ) );
+            fputs(  strdelimit( string, '{', '}', 1 )  , fptt );
             fputs( "\n" , fptt );
            fclose( fptt );
            printf( "Copying to clipfig: %s\n", user_line_linestr );
            chdir( pathbefore );
         }
-        else if ( (ch == 'y') || (ch == 'Y')  )
+
+        else if  (ch == 'y') 
         {
            // copy a line to clipboard
            chdir( pathbefore );
@@ -661,13 +667,24 @@ int main( int argc, char *argv[])
         }
 
 
+
+        else if (ch == 'O') 
+        {
+            enable_waiting_for_enter();
+            strncpy( string, "" , PATH_MAX );
+            strncpy( string, user_line_linestr , PATH_MAX );
+            printf("got: \"%s\"\n", strdelimit( string, '{', '}', 1 ) );
+            nrunwith( "  cacaview  ",  strdelimit( string, '{', '}', 1 ) );
+            disable_waiting_for_enter();
+        }
+
         else if (ch == 'K') 
         {
             enable_waiting_for_enter();
             strncpy( string, "" , PATH_MAX );
             strncpy( string, user_line_linestr , PATH_MAX );
             printf("got: \"%s\"\n", strdelimit( string, '{', '}', 1 ) );
-            nrunwith( "  echo ",  strdelimit( string, '{', '}', 1 ) );
+            nrunwith( "  export DISPLAY=:0 ; feh  ",  strdelimit( string, '{', '}', 1 ) );
             disable_waiting_for_enter();
             getchar();
         }
