@@ -240,6 +240,87 @@ void readfile( char *filesource )
 
 
 
+///////////////////////////////////////////
+///////////////////////////////////////////
+void appendfileline( char *outputfile, char *filesource )
+{
+   int readsearchi;
+   FILE *source; 
+   int ch ; 
+   char lline[PATH_MAX];
+   int pcc = 0;
+   int linecount = 0;
+   int artcount = 0;
+   int posy = 0;
+   clrscr();
+   home();
+   gotoxy( 0, viewer_scrolly );
+
+   FILE *fptt;
+   //fptt = fopen( outputfile , "wb+" );
+   //fclose( fptt );
+
+   source = fopen( filesource , "r");
+   int fileeof = 0;
+   while(  fileeof == 0 )
+   {
+       ch = fgetc(source); 
+       if ( ch == EOF ) fileeof = 1;
+       else
+       {
+         if ( ch != '\n' )
+            lline[pcc++]=ch;
+
+         else if ( ch == '\n' ) 
+         {
+             linecount++;
+             lline[pcc++]='\0';
+
+             //if ( linecount >= linesel )
+             //if ( posy <= rowmax -1 - viewer_scrolly )
+             {
+
+                if ( linecount  == user_line_sel )
+                {
+                   //printf("%s", KGRN);
+                   //printf(">");
+                }
+                else if ( ( linecount  >= user_block_start )
+                      &&  ( linecount  <= user_block_end ))
+                {
+                   //printf("%s", KCYN);
+                }
+                else
+                {
+                   //printf("%s", KYEL);
+                   //printf(" ");
+                }
+
+               // if ( mode_show_linenb == 1 ) 
+               //    printf( "%d: %s\n" , linecount, lline );   
+               // else
+               //    printf( "%s\n" , lline );   
+
+                if ( ( linecount  >= user_block_start ) &&  ( linecount  <= user_block_end ))
+                {
+                   fptt = fopen( outputfile  , "ab+" );
+                    fputs( lline, fptt );
+                    fputs( "\n", fptt );
+                   fclose( fptt );
+                }
+
+                posy++;
+             }
+
+             lline[0]='\0';
+             pcc = 0;
+         }
+       }
+   }
+   fclose(source);
+}
+
+
 
 ///////////////////////////////////////////
 ///////////////////////////////////////////
@@ -582,7 +663,7 @@ int main( int argc, char *argv[])
         else if ( ch == 'j' )    { linesel++; user_line_sel++; }
         else if ( ch == 'k' )    { linesel--; user_line_sel--; }
 
-        else if ( (ch == 'C') || (ch == 'c')  )
+        else if ( ch == 'c' )
         {
            // copy a line to clipfig
            chdir( pathbefore );
@@ -593,13 +674,15 @@ int main( int argc, char *argv[])
             strncpy( string, "" , PATH_MAX );
             strncpy( string, user_line_linestr , PATH_MAX );
             printf("got: \"%s\"\n", strdelimit( string, '{', '}', 1 ) );
-            //nrunwith( "  cacaview  ",  strdelimit( string, '{', '}', 1 ) );
             fputs(  strdelimit( string, '{', '}', 1 )  , fptt );
             fputs( "\n" , fptt );
            fclose( fptt );
            printf( "Copying to clipfig: %s\n", user_line_linestr );
            chdir( pathbefore );
         }
+
+
+
 
         else if  (ch == 'y') 
         {
@@ -614,6 +697,7 @@ int main( int argc, char *argv[])
            printf( "Copying to clipboard: %s\n", user_line_linestr );
            chdir( pathbefore );
         }
+
 
 
        else if ( ch == 'R' )
@@ -668,26 +752,26 @@ int main( int argc, char *argv[])
 
 
 
-        else if (ch == 'O') 
+        else if (ch == 'C') 
         {
             enable_waiting_for_enter();
             strncpy( string, "" , PATH_MAX );
             strncpy( string, user_line_linestr , PATH_MAX );
             printf("got: \"%s\"\n", strdelimit( string, '{', '}', 1 ) );
-            nrunwith( "  cacaview  ",  strdelimit( string, '{', '}', 1 ) );
+            nrunwith( "  cacaview  ~/pool/figs/",  strdelimit( string, '{', '}', 1 ) );
             disable_waiting_for_enter();
         }
-
         else if (ch == 'K') 
         {
             enable_waiting_for_enter();
             strncpy( string, "" , PATH_MAX );
             strncpy( string, user_line_linestr , PATH_MAX );
             printf("got: \"%s\"\n", strdelimit( string, '{', '}', 1 ) );
-            nrunwith( "  export DISPLAY=:0 ; feh  ",  strdelimit( string, '{', '}', 1 ) );
+            nrunwith( "  export DISPLAY=:0 ; feh ~/pool/figs/",  strdelimit( string, '{', '}', 1 ) );
             disable_waiting_for_enter();
             getchar();
         }
+
 
         else if (ch == '#') 
         {
@@ -743,6 +827,11 @@ int main( int argc, char *argv[])
         else if ( ch == '5' )
         {
            copyfileline( fichierclipfig , fichier );
+        }
+
+        else if ( ch == 'Y' )
+        {
+           appendfileline( fichierclipfig , fichier );
         }
 
         else if ( ch == '\'' )
