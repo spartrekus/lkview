@@ -528,10 +528,15 @@ int main( int argc, char *argv[])
        return 0;
     }
      
-    char fichierclipfig[PATH_MAX];
-    strncpy( fichierclipfig , getenv( "HOME" ) , PATH_MAX );
-    strncat( fichierclipfig , "/" , PATH_MAX - strlen( fichierclipfig ) -1 );
-    strncat( fichierclipfig , ".clipboard" , PATH_MAX - strlen( fichierclipfig ) -1 );
+    char cwd[PATH_MAX];
+    char fichier_clipboard[PATH_MAX];
+    strncpy( fichier_clipboard , getenv( "HOME" ) , PATH_MAX );
+    strncat( fichier_clipboard , "/" , PATH_MAX - strlen( fichier_clipboard ) -1 );
+    strncat( fichier_clipboard , ".clipboard" , PATH_MAX - strlen( fichier_clipboard ) -1 );
+
+
+
+
 
     if ( argc == 2)
     if ( strcmp( argv[1] , "-y" ) ==  0 ) 
@@ -563,8 +568,10 @@ int main( int argc, char *argv[])
     if ( argc == 1)
     {
        printf("Usage: please enter a file to use with tless." );
+       printf("\n" );
        return 0;
     }
+
 
     ///////////////
     if ( argc == 2)
@@ -609,13 +616,13 @@ int main( int argc, char *argv[])
         else if (ch == '\'') 
            linesel = clip_slot_line ; 
 
-        else if ( ch == 15 ) 
+
+        else if ( ch == 18 ) 
         {
             gotoxy( 0, rowmax-1);
-            printf("|^O| Press Key:");
+            printf("|^R| Press Key:");
             ch = getchar();
-            if  ( ch == 'v' )  {  nrunwith( " vim " , fichier ); }
-            else if (ch == 'p') 
+            if (ch == 'p') 
             {
                 enable_waiting_for_enter();
                 strncpy( string, "" , PATH_MAX );
@@ -623,17 +630,6 @@ int main( int argc, char *argv[])
                 printf("got: \"%s\"\n", strdelimit( string, '{', '}', 1 ) );
                 nrunwith( " export DISPLAY=:0 ;   mupdf   ~/pool/figs/",  strdelimit( string, '{', '}', 1 ) );
                 disable_waiting_for_enter();
-            }
-
-            else if (ch == 's') 
-            {
-                enable_waiting_for_enter();
-                strncpy( string, "" , PATH_MAX );
-                strncpy( string, user_line_linestr , PATH_MAX );
-                printf("got: \"%s\"\n", strdelimit( string, '{', '}', 1 ) );
-                nrunwith( " export DISPLAY=:0 ;  screen -d -m  feh  ~/pool/figs/",  strdelimit( string, '{', '}', 1 ) );
-                disable_waiting_for_enter();
-                //getchar();
             }
             else if (ch == 'f') 
             {
@@ -647,6 +643,8 @@ int main( int argc, char *argv[])
             }
         }
 
+
+
         else if ( ch == 'g' ) 
         {
             gotoxy( 0, rowmax-1);
@@ -655,14 +653,18 @@ int main( int argc, char *argv[])
             if          ( ch == '1' )  { linesel = user_block_start; }
             else if     ( ch == '2' )  { linesel = user_block_end;   }
             else if ( ch == 'g' )  { linesel = 0; user_line_sel = 1 ; }
-            else if ( ch == 'v' )  {  nrunwith( " vim " , fichier ); }
         }
 
-        else if ( ch == 'G' )     linesel = file_linemax - w.ws_row;
+        else if ( ch == 'v' )  {  nrunwith( " vim " , fichier ); }
 
+        else if ( ch == 'G' )     linesel = file_linemax - w.ws_row;
         else if ( ch == 'j' )    { linesel++; user_line_sel++; }
         else if ( ch == 'k' )    { linesel--; user_line_sel--; }
 
+
+
+
+     /*
         else if ( ch == 'c' )
         {
            // copy a line to clipfig
@@ -680,23 +682,8 @@ int main( int argc, char *argv[])
            printf( "Copying to clipfig: %s\n", user_line_linestr );
            chdir( pathbefore );
         }
+     */
 
-
-
-
-        else if  (ch == 'y') 
-        {
-           // copy a line to clipboard
-           chdir( pathbefore );
-           chdir( getenv( "HOME" ) );
-           FILE *fptt; 
-           fptt = fopen( ".clipboard", "wb+" );
-            fputs( user_line_linestr , fptt );
-            fputs( "\n" , fptt );
-           fclose( fptt );
-           printf( "Copying to clipboard: %s\n", user_line_linestr );
-           chdir( pathbefore );
-        }
 
 
 
@@ -713,6 +700,7 @@ int main( int argc, char *argv[])
 
         else if ( ch == 'u' )    { linesel-= rowmax * 76 / 100; user_line_sel-= rowmax * 76 / 100; }
         else if ( ch == 'd' )    { linesel+=10; user_line_sel+=10;} //ctrld
+        else if ( ch == 'n' )    { linesel+=10; user_line_sel+=10;} //ctrld
         else if ( ch == 4 )      { linesel+=50; user_line_sel+=50;} //ctrld
 
         else if ( ch == 's' )     viewer_scrolly++;
@@ -722,6 +710,8 @@ int main( int argc, char *argv[])
 
         else if ( ch == '(' ) user_line_sel--;
         else if ( ch == ')' ) user_line_sel++;
+        else if ( ch == '-' ) user_line_sel--;
+        else if ( ch == '+' ) user_line_sel++;
 
         else if ( ch == '[' )  cols--;
         else if ( ch == ']' )  cols++;
@@ -751,14 +741,21 @@ int main( int argc, char *argv[])
         }
 
 
-
-        else if (ch == 'C') 
+        /// 15 is ctrl+o
+        /// special on pool figs, if you want ceh it is too possible.
+        else if ((ch == 'O')  || ( ch == 15 ) || (ch == 'o')  || ( ch == 15 ))
         {
             enable_waiting_for_enter();
-            strncpy( string, "" , PATH_MAX );
-            strncpy( string, user_line_linestr , PATH_MAX );
-            printf("got: \"%s\"\n", strdelimit( string, '{', '}', 1 ) );
-            nrunwith( "  cacaview  ~/pool/figs/",  strdelimit( string, '{', '}', 1 ) );
+            printf( "=> key ^O ...\n" );
+            printf( "=> One tabs screen, one clipboard and one unix time graphic files, ^O ...\n" );
+            printf( "=> One single location on remote sshfs...\n" );
+            strncpy( string, " " , PATH_MAX );
+            strncat( string ,  "  img2txt --width=210 --height=131 --font-width=8 --font-height=8  "   , PATH_MAX - strlen( string  ) -1 );
+            strncat( string ,  " ~/pool/figs/\""   , PATH_MAX - strlen( string  ) -1 );
+            strncat( string ,  strdelimit( user_line_linestr, '{', '}', 1 ) , PATH_MAX - strlen( string  ) -1 );
+            strncat( string ,  "\" "   , PATH_MAX - strlen( string  ) -1 );
+            strncat( string ,  "  >  ~/.aafig  "   , PATH_MAX - strlen( string  ) -1 );
+            nsystem( string );
             disable_waiting_for_enter();
         }
         else if (ch == 'K') 
@@ -786,6 +783,7 @@ int main( int argc, char *argv[])
             disable_waiting_for_enter();
         }
 
+
         else if (ch == '$') 
         {
             enable_waiting_for_enter();
@@ -806,8 +804,9 @@ int main( int argc, char *argv[])
         {
             clrscr();
             ch = 1; 
-            printf( "HELP\n" );
-            printf( "====\n" );
+            printf( "===========\n" );
+            printf( "HELP LKVIEW\n" );
+            printf( "===========\n" );
             printf( "?: Help" );
             printf( "\n" );
             printf( "1: Start selection" );
@@ -818,21 +817,32 @@ int main( int argc, char *argv[])
             printf( "\n" );
             printf( "w: Mode Wrap" );
             printf( "\n" );
-            printf( "l: Mode Line" );
-            printf( "\n" );
+            printf( "l: Mode Line" ); printf( "\n" );
+            printf( "file: |%s|", fichier  ); printf( "\n" );
+            printf( "path: |%s|", getcwd( cwd, PATH_MAX) ); printf( "\n" );
             getchar();
             ch = 0;
         }
 
-        else if ( ch == '5' )
+
+        else if  (ch == 'y') 
         {
-           copyfileline( fichierclipfig , fichier );
+           // copy a line to clipboard
+           chdir( pathbefore );
+           chdir( getenv( "HOME" ) );
+           FILE *fptt; 
+           fptt = fopen( ".clipboard", "wb+" );
+            fputs( user_line_linestr , fptt );
+            fputs( "\n" , fptt );
+           fclose( fptt );
+           printf( "Copying to clipboard: %s\n", user_line_linestr );
+           chdir( pathbefore );
         }
 
+        else if ( ch == '5' )
+           copyfileline( fichier_clipboard , fichier );
         else if ( ch == 'Y' )
-        {
-           appendfileline( fichierclipfig , fichier );
-        }
+           appendfileline( fichier_clipboard , fichier );
 
         else if ( ch == '\'' )
         {
@@ -852,8 +862,7 @@ int main( int argc, char *argv[])
           if (ch == '"') 
              clip_slot_line = linesel ; 
 
-          else if (ch == 'n') 
-             clip_slot_line = linesel ; 
+          else if (ch == 'n') clip_slot_line = linesel ; 
 
            else if ( ch == '1' )
               user_block_start = linesel;
