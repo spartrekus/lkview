@@ -1,4 +1,8 @@
 
+///////////
+// LKVIEW  
+///////////
+
 //////////////////////////////////////////
 //////////////////////////////////////////
 //////////////////////////////////////////
@@ -25,6 +29,64 @@
 #include <time.h>
 
 
+
+
+
+
+
+
+
+#include <stdlib.h>
+#include <dirent.h>
+#include <string.h>
+#include <string.h>
+#include <ctype.h>
+#include <sys/stat.h>
+#include <dirent.h>
+#include <sys/types.h>
+#include <unistd.h>  
+
+
+int show_comment = 1;
+
+
+int fexist(char *a_option)
+{
+  char dir1[PATH_MAX]; 
+  char *dir2;
+  DIR *dip;
+  strncpy( dir1 , "",  PATH_MAX  );
+  strncpy( dir1 , a_option,  PATH_MAX  );
+
+  struct stat st_buf; 
+  int status; 
+  int fileordir = 0 ; 
+
+  status = stat ( dir1 , &st_buf);
+  if (status != 0) {
+    fileordir = 0;
+  }
+
+  // this is compatible to check if a file exists
+  FILE *fp2check = fopen( dir1  ,"r");
+  if( fp2check ) {
+  // exists
+  fileordir = 1; 
+  fclose(fp2check);
+  } 
+
+  if (S_ISDIR (st_buf.st_mode)) {
+    fileordir = 2; 
+  }
+return fileordir;
+/////////////////////////////
+}
+
+
+
+
+
+
 #define ESC "\033"
 #define home() 			printf(ESC "[H") //Move cursor to the indicated row, column (origin at 1,1)
 #define clrscr()		printf(ESC "[2J") //clear the screen, move to (1,1)
@@ -45,6 +107,7 @@ int clip_slot_line = 0;
 
 char user_line_linestr[PATH_MAX];
 int  user_line_sel = 2;
+char fichier[PATH_MAX];
 
 int  user_block_start = 0;
 int  user_block_end = 0;
@@ -412,6 +475,7 @@ void copyfileline( char *outputfile, char *filesource )
 ///////////////////////////////////////////
 void readfileline( char *filesource )
 {
+   int area_comment_on = 0;
 
    int readsearchi;
    FILE *source; 
@@ -421,6 +485,7 @@ void readfileline( char *filesource )
    int linecount = 0;
    int artcount = 0;
    int posy = 0;
+   int fskip = 0;
    clrscr();
    home();
    gotoxy( 0, viewer_scrolly );
@@ -437,12 +502,25 @@ void readfileline( char *filesource )
 
          else if ( ch == '\n' ) 
          {
+             fskip = 0;
+             printf("%s", KYEL);
              linecount++;
              lline[pcc++]='\0';
 
+             if ( ( lline[0]=='/') && (lline[1]=='/') )  
+             {
+                if ( show_comment == 0 ) 
+                    fskip = 1; 
+             }
+
              if ( linecount >= linesel )
+             if ( fskip == 0 )
              if ( posy <= rowmax -1 - viewer_scrolly )
              {
+                if ( ( lline[0]=='/') && (lline[1]=='/') &&  ( show_comment == 2 ) )
+                   area_comment_on = 1; 
+                else
+                   area_comment_on = 0; 
 
                 if ( linecount  == user_line_sel )
                 {
@@ -455,6 +533,10 @@ void readfileline( char *filesource )
                 {
                    printf("%s", KCYN);
                 }
+                else if ( area_comment_on == 1 ) 
+                {
+                   printf("%s", KWHT);
+                }
                 else
                 {
                    printf("%s", KYEL);
@@ -465,7 +547,7 @@ void readfileline( char *filesource )
                 {
                    if  ( mode_show_linenb == 1 ) printf( "%d: " , linecount );
                    for( foox = 0 ;  foox <= strlen( lline ) ; foox++)
-                     if ( foox <= cols ) 
+                     if ( foox <= cols-2 ) 
                         printf( "%c" , lline[ foox ] );   
 
                    printf( "\n" );
@@ -518,6 +600,138 @@ void size_screen()
 
 
 
+
+
+
+
+
+
+
+void open_file( )
+{
+    char ptr[PATH_MAX]; 
+    char strmsg[PATH_MAX]; 
+    int j, chr, ch ;  ch = 0; int fooi;
+    int menu_usersel = 0; int gamev = 0;
+
+    char strmenu[PATH_MAX];
+    strncpy( strmenu , "" , PATH_MAX );
+    DIR *dirp; 
+    struct dirent *dp;
+    int foocounter = 1;
+
+          strncpy( strmsg , fichier, PATH_MAX );
+          strncpy( strmenu, "" , PATH_MAX );
+          fooi = 0;   
+          while( gamev == 0 ) 
+          {
+            clrscr();
+            home();
+            printf( "LS:\n");
+
+   //         nls( menu_usersel );
+   foocounter = 1;
+   dirp = opendir( "." );
+   while  (( dp = readdir( dirp )) != NULL ) 
+   {
+         if (  strcmp( dp->d_name, "." ) != 0 )
+         if (  strcmp( dp->d_name, ".." ) != 0 )
+         {
+           if ( foocounter == menu_usersel )  
+           {
+             printf( ">%s\n", dp->d_name );
+             strncpy( strmenu , dp->d_name , PATH_MAX );
+           }
+           else
+           {
+             printf( " %s\n", dp->d_name );
+           }
+           foocounter++;
+          }
+         }
+         closedir( dirp );
+
+	    if ( fooi   ==  1 ) strncpy( strmsg, strmenu, PATH_MAX ); 
+            fooi = 0;  
+            printf( "\n");
+            printf( "(Current File: %s)\n", fichier );
+            printf( "File: " );
+            printf( "|%s|", strmsg );
+            ch = getchar(); 
+            if       ( ch == 27 )  gamev = 1;
+            else if  ( ch == 15 )  gamev = 1;
+            else if  ( ch == 21 ) { menu_usersel--; fooi = 1; } 
+            else if  ( ch == 4  ) { menu_usersel++; fooi = 1; } 
+
+            else if  ( ch == 10 ) { gamev = 1; 
+                if ( fexist( strmsg ) == 1 ) 
+                  strncpy( fichier, strmsg, PATH_MAX ); }
+
+	    else if ( ( ch == 8 )  || ( ch == 127 ) )  
+            {
+               if ( strlen( strmsg ) >= 1 ) 
+               {
+                 j = 0; strncpy(  ptr , "" ,  PATH_MAX );
+                 for ( chr = 0 ;  chr <= strlen( strmsg )-2 ; chr++) 
+                 {
+                    ptr[j++] = strmsg[chr];
+                 }
+	         strncpy( strmsg, ptr ,  PATH_MAX );
+               }
+            }
+	    else if (
+			(( ch >= 'a' ) && ( ch <= 'z' ) ) 
+		        || (( ch >= 'A' ) && ( ch <= 'Z' ) ) 
+		        || (( ch >= '1' ) && ( ch <= '9' ) ) 
+		        || (( ch == '0' ) ) 
+		        || (( ch == '~' ) ) 
+		        || (( ch == '!' ) ) 
+		        || (( ch == '&' ) ) 
+		        || (( ch == '=' ) ) 
+		        || (( ch == ':' ) ) 
+		        || (( ch == ';' ) ) 
+		        || (( ch == '<' ) ) 
+		        || (( ch == '>' ) ) 
+		        || (( ch == ' ' ) ) 
+		        || (( ch == '|' ) ) 
+		        || (( ch == '#' ) ) 
+		        || (( ch == '?' ) ) 
+		        || (( ch == '+' ) ) 
+		        || (( ch == '/' ) ) 
+		        || (( ch == '\\' ) ) 
+		        || (( ch == '.' ) ) 
+		        || (( ch == '$' ) ) 
+		        || (( ch == '%' ) ) 
+		        || (( ch == '-' ) ) 
+		        || (( ch == ',' ) ) 
+		        || (( ch == '{' ) ) 
+		        || (( ch == '}' ) ) 
+		        || (( ch == '(' ) ) 
+		        || (( ch == ')' ) ) 
+		        || (( ch == ']' ) ) 
+		        || (( ch == '[' ) ) 
+		        || (( ch == '*' ) ) 
+		        || (( ch == '"' ) ) 
+		        || (( ch == '@' ) ) 
+		        || (( ch == '-' ) ) 
+		        || (( ch == '_' ) ) 
+		        || (( ch == '^' ) ) 
+		        || (( ch == '\'' ) ) 
+	             ) 
+		    {
+                        snprintf( ptr, PATH_MAX , "%s%c",  strmsg, ch );
+		        strncpy(  strmsg,  ptr ,  PATH_MAX );
+		  }
+            
+          }
+}
+// end of strmenu
+
+
+
+
+
+
 int main( int argc, char *argv[])
 {
 
@@ -528,13 +742,11 @@ int main( int argc, char *argv[])
        return 0;
     }
      
-    char cwd[PATH_MAX];
+    char cwd[PATH_MAX]; 
     char fichier_clipboard[PATH_MAX];
     strncpy( fichier_clipboard , getenv( "HOME" ) , PATH_MAX );
     strncat( fichier_clipboard , "/" , PATH_MAX - strlen( fichier_clipboard ) -1 );
     strncat( fichier_clipboard , ".clipboard" , PATH_MAX - strlen( fichier_clipboard ) -1 );
-
-
 
 
 
@@ -550,8 +762,8 @@ int main( int argc, char *argv[])
     strncpy( user_line_linestr, "" , PATH_MAX );
     strncpy( pathbefore , getcwd( string, PATH_MAX ) , PATH_MAX );
 
-    int key = 0;  int fooi;
-    char fichier[PATH_MAX];
+    int key = 0;  
+    int fooi;
 
     struct winsize w; // need ioctl and unistd 
     ioctl( STDOUT_FILENO, TIOCGWINSZ, &w );
@@ -593,6 +805,7 @@ int main( int argc, char *argv[])
         if ( user_line_sel <= 0 )  user_line_sel = 0;
         if ( user_line_sel <= linesel ) user_line_sel = linesel; 
 
+        ///  main
         readfileline( fichier );
 
         gotoxy( 0, rowmax-2);
@@ -601,7 +814,8 @@ int main( int argc, char *argv[])
         gotoxy( 0, rowmax-1);
         printf("|L%d/%d|[%d] ==>", linesel , file_linemax , user_line_sel );
 
-        if ( mode_show_wrap == 1 ) printf( "|W| " ); 
+        if ( mode_show_wrap == 1 )  printf( "|NoWarp| " ); 
+        if ( show_comment != 1   )  printf( "|Com:%d| ", show_comment ); 
         printf(" Press Key:");
 
         ch = getchar();
@@ -664,27 +878,6 @@ int main( int argc, char *argv[])
 
 
 
-     /*
-        else if ( ch == 'c' )
-        {
-           // copy a line to clipfig
-           chdir( pathbefore );
-           chdir( getenv( "HOME" ) );
-           FILE *fptt; 
-           fptt = fopen( ".clipfig", "wb+" );
-            //fputs( user_line_linestr , fptt );
-            strncpy( string, "" , PATH_MAX );
-            strncpy( string, user_line_linestr , PATH_MAX );
-            printf("got: \"%s\"\n", strdelimit( string, '{', '}', 1 ) );
-            fputs(  strdelimit( string, '{', '}', 1 )  , fptt );
-            fputs( "\n" , fptt );
-           fclose( fptt );
-           printf( "Copying to clipfig: %s\n", user_line_linestr );
-           chdir( pathbefore );
-        }
-     */
-
-
 
 
        else if ( ch == 'R' )
@@ -722,7 +915,7 @@ int main( int argc, char *argv[])
         else if ( ch == '8' )  cols = 80;
         else if ( ch == '9' )  cols = 90;
 
-        else if ( ch == 'a' )     readfileline( fichier );
+        //else if ( ch == 'a' )   readfileline( fichier );
 
         else if ( ch == 'l' )
         {  
@@ -731,6 +924,15 @@ int main( int argc, char *argv[])
            else
              mode_show_linenb = 0;
         }
+
+        else if ( ch == 'c' )
+        {  
+           if      (  show_comment == 0 ) show_comment = 1;
+           else if (  show_comment == 1 ) show_comment = 2;
+           else if (  show_comment == 2 ) show_comment = 0;
+           else   show_comment = 0;
+        }
+
 
         else if ( ch == 'w' )
         {  
@@ -741,23 +943,6 @@ int main( int argc, char *argv[])
         }
 
 
-        /// 15 is ctrl+o
-        /// special on pool figs, if you want ceh it is too possible.
-        else if ((ch == 'O')  || ( ch == 15 ) || (ch == 'o')  || ( ch == 15 ))
-        {
-            enable_waiting_for_enter();
-            printf( "=> key ^O ...\n" );
-            printf( "=> One tabs screen, one clipboard and one unix time graphic files, ^O ...\n" );
-            printf( "=> One single location on remote sshfs...\n" );
-            strncpy( string, " " , PATH_MAX );
-            strncat( string ,  "  img2txt --width=210 --height=131 --font-width=8 --font-height=8  "   , PATH_MAX - strlen( string  ) -1 );
-            strncat( string ,  " ~/pool/figs/\""   , PATH_MAX - strlen( string  ) -1 );
-            strncat( string ,  strdelimit( user_line_linestr, '{', '}', 1 ) , PATH_MAX - strlen( string  ) -1 );
-            strncat( string ,  "\" "   , PATH_MAX - strlen( string  ) -1 );
-            strncat( string ,  "  >  ~/.aafig  "   , PATH_MAX - strlen( string  ) -1 );
-            nsystem( string );
-            disable_waiting_for_enter();
-        }
         else if (ch == 'K') 
         {
             enable_waiting_for_enter();
@@ -776,9 +961,6 @@ int main( int argc, char *argv[])
             strncpy( string, "" , PATH_MAX );
             scan_line( string , PATH_MAX);
             printf("got: \"%s\"\n", string );
-            //user_line_sel = atoi( string );
-            //user_block_start = atoi( linesel );
-            //viewer_scrolly = atoi( string );
             linesel = atoi( string );
             disable_waiting_for_enter();
         }
@@ -800,10 +982,10 @@ int main( int argc, char *argv[])
         else if ( ch == '2' )
               user_block_end = user_line_sel;
 
-        else if ( ch == '?' )
+        else if ((  ch == '?' ) || ( ch == 'i' ))
         {
             clrscr();
-            ch = 1; 
+            ch = 1;  home();
             printf( "===========\n" );
             printf( "HELP LKVIEW\n" );
             printf( "===========\n" );
@@ -820,10 +1002,25 @@ int main( int argc, char *argv[])
             printf( "l: Mode Line" ); printf( "\n" );
             printf( "file: |%s|", fichier  ); printf( "\n" );
             printf( "path: |%s|", getcwd( cwd, PATH_MAX) ); printf( "\n" );
+            printf( "<Press Key>" );
             getchar();
             ch = 0;
         }
 
+
+        else if  (ch == 'a') 
+        {
+           // copy a line to clipboard
+           chdir( pathbefore );
+           chdir( getenv( "HOME" ) );
+           FILE *fptt; 
+           fptt = fopen( ".clipboard", "ab+" );
+            fputs( user_line_linestr , fptt );
+            fputs( "\n" , fptt );
+           fclose( fptt );
+           printf( "Copying to clipboard: %s\n", user_line_linestr );
+           chdir( pathbefore );
+        }
 
         else if  (ch == 'y') 
         {
@@ -839,10 +1036,26 @@ int main( int argc, char *argv[])
            chdir( pathbefore );
         }
 
+        else if  ( (ch == 'Y')  || ( ch == 'o' )  )
+        {
+           // copy a line to clipboard
+           chdir( pathbefore );
+           chdir( getenv( "HOME" ) );
+           FILE *fptt; 
+            fptt = fopen( ".wclipboard", "wb+" );
+            fputs( user_line_linestr , fptt );
+            fputs( "\n" , fptt );
+            fclose( fptt );
+           nsystem( " cp .wclipboard ~/workspace/.clipboard " );
+           chdir( pathbefore );
+           printf( "Copying to clipboard: %s\n", user_line_linestr );
+        }
+
         else if ( ch == '5' )
            copyfileline( fichier_clipboard , fichier );
-        else if ( ch == 'Y' )
-           appendfileline( fichier_clipboard , fichier );
+
+       // else if ( ch == 'Y' )
+       //    appendfileline( fichier_clipboard , fichier );
 
         else if ( ch == '\'' )
         {
@@ -896,6 +1109,11 @@ int main( int argc, char *argv[])
             printf("got: \"%s\"\n", string );
             disable_waiting_for_enter();
         }
+
+
+       else if ( ch == 15 )
+            open_file( );
+
 
     }
 
