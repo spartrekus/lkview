@@ -1036,20 +1036,25 @@ int main( int argc, char *argv[])
            chdir( pathbefore );
         }
 
-        else if  ( (ch == 'Y')  || ( ch == 'o' )  )
+        else if ( ch == 'Y' )
+           copyfileline( "clipboard" , fichier );
+      /*
+        else if  ( ch == 'Y' ) 
         {
            // copy a line to clipboard
            chdir( pathbefore );
-           chdir( getenv( "HOME" ) );
+           //chdir( getenv( "HOME" ) );
            FILE *fptt; 
-            fptt = fopen( ".wclipboard", "wb+" );
+            //fptt = fopen( ".wclipboard", "wb+" );
+            fptt = fopen( "clipboard", "wb+" );
             fputs( user_line_linestr , fptt );
             fputs( "\n" , fptt );
             fclose( fptt );
-           nsystem( " cp .wclipboard ~/workspace/.clipboard " );
+           //nsystem( " cp .wclipboard ~/workspace/.clipboard " );
            chdir( pathbefore );
            printf( "Copying to clipboard: %s\n", user_line_linestr );
         }
+       */
 
         else if ( ch == '5' )
            copyfileline( fichier_clipboard , fichier );
